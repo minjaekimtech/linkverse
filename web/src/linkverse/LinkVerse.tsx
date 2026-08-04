@@ -3,25 +3,35 @@ import { useData } from "./useData";
 import Scope, { isPriority } from "./Scope";
 import Kit from "./Kit";
 import Onboarding from "./Onboarding";
+import LocalTestBadge from "./LocalTestBadge";
+import DemoOnboarding, { useDemoState } from "./demo/DemoOnboarding";
+import DemoBadge from "./demo/DemoBadge";
+import { toCreators } from "./demo/demoScoring";
 
 const fmtSubs = (n: number) =>
   n >= 1_000_000 ? `${(n / 1e6).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}K` : `${n}`;
 
 export default function LinkVerse() {
-  const { data, error } = useData();
+  const { data, error, keywordDemo } = useData();
+  const demo = useDemoState();
+  const demoEnabled = import.meta.env.DEV;
   const [selected, setSelected] = useState<string | null>(null);
   const [onlyPriority, setOnlyPriority] = useState(false);
   const [poolIds, setPoolIds] = useState<Set<string>>(new Set());
 
-  const selectedCreator = useMemo(
-    () => data?.creators.find((c) => c.id === selected) ?? null,
-    [data, selected],
-  );
-  const shown = useMemo(
-    () => (data ? (onlyPriority ? data.creators.filter(isPriority) : data.creators) : []),
-    [data, onlyPriority],
-  );
-  const top = useMemo(() => (data ? data.creators.slice(0, 12) : []), [data]);
+  const demoCreators = useMemo(() => demoEnabled && demo.state.view === "scope" && demo.state.domain && demo.state.market
+    ? toCreators(keywordDemo?.categories[demo.state.domain]?.creators || [], demo.state.audienceInput, demo.state.market) : [],
+    [demoEnabled, demo.state, keywordDemo]);
+  const activeCreators = demoEnabled && demo.state.view === "scope" ? demoCreators : data?.creators || [];
+  const selectedCreator = useMemo(() => activeCreators.find((c) => c.id === selected) ?? null,[activeCreators, selected]);
+  const shown = useMemo(() => onlyPriority ? activeCreators.filter(isPriority) : activeCreators,[activeCreators, onlyPriority]);
+  const top = useMemo(() => {
+    if (demoEnabled && demo.state.view === "scope") return demoCreators.slice(0, 12);
+    if (!data) return [];
+    const productionTop = data.creators.filter((creator) => !creator.localTest).slice(0, 12);
+    const localTests = data.creators.filter((creator) => creator.localTest);
+    return [...productionTop, ...localTests];
+  }, [data, demoEnabled, demo.state.view, demoCreators]);
 
   const togglePool = (id: string) =>
     setPoolIds((prev) => {
@@ -32,8 +42,8 @@ export default function LinkVerse() {
     });
 
   const poolCreators = useMemo(
-    () => (data ? data.creators.filter((c) => poolIds.has(c.id)) : []),
-    [data, poolIds],
+    () => activeCreators.filter((c) => poolIds.has(c.id)),
+    [activeCreators, poolIds],
   );
   const poolBudget = useMemo(() => {
     const priced = poolCreators.filter((c) => c.price.min !== null && c.price.max !== null);
@@ -120,12 +130,18 @@ export default function LinkVerse() {
         </p>
       </section>
 
-      <Onboarding />
+      {demoEnabled ? <DemoOnboarding state={demo.state} go={demo.go} /> : <Onboarding />}
 
       {/* 2 · EVIDENCE (scope + top picks) */}
-      <section id="evidence" className="border-t border-line bg-surface">
+      {(!demoEnabled || demo.state.view === "scope") && <section id="evidence" className="border-t border-line bg-surface">
         <div className="max-w-6xl mx-auto px-6 py-12 grid lg:grid-cols-[1.15fr_1fr] gap-10 items-start">
           <div>
+            {demoEnabled && <div className="mb-5 rounded-xl border border-fuchsia-300 bg-fuchsia-50/60 p-4 text-sm">
+              <div className="flex items-center gap-2"><DemoBadge/><strong>{demo.state.productInput}</strong></div>
+              <p className="mt-2">Audience: {demo.state.audienceInput} · Market: {demo.state.market}</p>
+              <p className="mt-1 text-xs text-fuchsia-800">Metadata-based audience estimate · NOT PRODUCTION COMPARABLE</p>
+              <button onClick={()=>demo.go({...demo.state,view:"product"})} className="mt-2 text-xs font-semibold text-accent">Change conditions</button>
+            </div>}
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-display font-bold text-ink text-xl">The evidence</h2>
               <label className="flex items-center gap-2 text-xs text-muted cursor-pointer select-none">
@@ -141,6 +157,7 @@ export default function LinkVerse() {
             <div className="rounded-xl border border-line p-2">
               <Scope creators={shown} selected={selected} onSelect={setSelected} />
             </div>
+            {demoEnabled && demoCreators.length === 0 && <p className="mt-3 text-sm text-muted">No cache is available for this category yet. The existing site remains unchanged.</p>}
           </div>
 
           {/* top picks list */}
@@ -164,7 +181,10 @@ export default function LinkVerse() {
                       <span className="w-9 h-9 rounded bg-paper border border-line shrink-0" />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-ink truncate">{c.title}</span>
+                      <span className="flex items-center gap-1.5 text-sm font-medium text-ink min-w-0">
+                        <span className="truncate">{c.title}</span>
+                        {c.localTest && (c.localTest.kind === "keyword_demo" ? <DemoBadge /> : <LocalTestBadge />)}
+                      </span>
                       <span className="block text-xs text-muted truncate">
                         {fmtSubs(c.subs)} · {c.sport}
                       </span>
@@ -177,7 +197,7 @@ export default function LinkVerse() {
             <p className="text-[11px] text-muted mt-2">Ranked by combined score (Potential × Resonance).</p>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* 3 · ACTION note */}
       <section className="max-w-6xl mx-auto px-6 py-12 text-center">

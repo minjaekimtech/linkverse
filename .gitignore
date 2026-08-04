@@ -10,3 +10,4 @@ web/dist/
 web/public/dataset.json
 .claude/
 screenshots/
+/local_test_output/

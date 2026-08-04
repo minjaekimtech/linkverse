@@ -1,5 +1,7 @@
 import { useState } from "react";
 import type { Creator, Script } from "./useData";
+import LocalTestBadge from "./LocalTestBadge";
+import DemoBadge from "./demo/DemoBadge";
 import {
   Bar,
   BarChart,
@@ -76,7 +78,10 @@ export default function Kit({ creator, onClose }: { creator: Creator; onClose: (
           <img src={creator.thumb} alt="" className="w-12 h-12 rounded object-cover border border-line" />
         )}
         <div className="min-w-0 flex-1">
-          <h2 className="font-display font-bold text-ink leading-tight truncate">{creator.title}</h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="font-display font-bold text-ink leading-tight truncate">{creator.title}</h2>
+            {creator.localTest && (creator.localTest.kind === "keyword_demo" ? <DemoBadge /> : <LocalTestBadge />)}
+          </div>
           <p className="text-xs text-muted mt-0.5">
             {fmtSubs(creator.subs)} subs · {creator.sport}
             {creator.market ? ` · ${creator.market.replace(/_/g, " ")}` : ""}
@@ -100,6 +105,16 @@ export default function Kit({ creator, onClose }: { creator: Creator; onClose: (
             ),
           )}
         </div>
+        {creator.localTest && (
+          <p className="-mt-3 text-[11px] font-medium text-violet-700">
+            Heuristic/local metadata proxy — not production comparable
+          </p>
+        )}
+        {creator.localTest?.kind === "keyword_demo" && (
+          <div className="-mt-3 text-[11px] font-semibold text-fuchsia-700">
+            <p>Metadata-based audience estimate</p><p>NOT PRODUCTION COMPARABLE</p>
+          </div>
+        )}
 
         <ThumbnailStrip thumbnails={creator.thumbnails} />
 

@@ -78,6 +78,14 @@ export default function Scope({
               fill={pri ? "var(--color-accent)" : "#aab0ba"}
               opacity={pri ? 0.9 : 0.55}
               stroke={c.hasScript ? "var(--color-surface)" : "none"} strokeWidth={c.hasScript ? 1.5 : 0} />
+            {c.localTest && (
+              <g pointerEvents="none">
+                <rect x={cx + 7} y={cy - 18} width="55" height="15" rx="4"
+                  fill="#f5f3ff" stroke="#8b5cf6" strokeWidth="0.8" />
+                <text x={cx + 34.5} y={cy - 7.5} textAnchor="middle" fontSize="8"
+                  fontWeight="700" fill="#6d28d9">{c.localTest.kind === "keyword_demo" ? "DEMO" : "LOCAL TEST"}</text>
+              </g>
+            )}
           </g>
         );
       })}

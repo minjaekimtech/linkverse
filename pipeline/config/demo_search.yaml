@@ -1,0 +1,11 @@
+version: 1
+limits:
+  search_results_per_term: 5
+  accepted_channels_per_term: 2
+  max_channels_per_domain: 5
+  recent_videos_per_channel: 10
+domains:
+  sunscreen:
+    terms: ["선크림", "썬크림", "자외선 차단제", "sunscreen", "sunblock", "SPF"]
+  soccer_equipment:
+    terms: ["축구 용품", "축구화", "풋살화", "축구공", "축구 유니폼", "골키퍼 장갑", "soccer gear", "football boots"]

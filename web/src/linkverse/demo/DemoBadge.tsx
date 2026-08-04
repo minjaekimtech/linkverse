@@ -1,0 +1,1 @@
+export default function DemoBadge(){return <span className="shrink-0 rounded border border-fuchsia-400 bg-fuchsia-50 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-fuchsia-700">DEMO SCORE</span>}
